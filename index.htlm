@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#121826">
+  <title>Prof IA - Apprendre une langue</title>
+  
+  <!-- Lien vers le fichier de configuration PWA -->
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* RESET ET STYLES DE BASE (MODE SOMBRE) */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #121826;
+      color: #F3F4F6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 450px;
+      background-color: #1E293B;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #38BDF8;
+    }
+
+    /* GESTION DES ÉCRANS (Un seul affiché à la fois) */
+    .screen {
+      display: none;
+    }
+    .screen.active {
+      display: block;
+    }
+
+    /* FORMULAIRES ET BOUTONS */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #94A3B8;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background-color: #0F172A;
+      color: #FFFFFF;
+      font-size: 16px;
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      background-color: #2563EB;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button.secondary {
+      background-color: #334155;
+    }
+
+    button.danger {
+      background-color: #DC2626;
+    }
+
+    /* CARTE RÉSUMÉ */
+    .card {
+      background-color: #0F172A;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid #334155;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    /* ÉCRAN D'APPEL */
+    .timer {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #F59E0B;
+    }
+
+    .status-badge {
+      text-align: center;
+      padding: 10px;
+      border-radius: 20px;
+      background-color: #334155;
+      margin-bottom: 30px;
+      font-weight: bold;
+    }
+
+    .mic-button {
+      width: 120px;
+      height: 120px;
+      border-radius: 60px;
+      margin: 20px auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 40px;
+      background-color: #2563EB;
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
+    }
+
+    .mic-button.listening {
+      background-color: #10B981;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.7);
+    }
+
+    .mic-button.thinking {
+      background-color: #F59E0B;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
+    }
+
+    .mic-button.speaking {
+      background-color: #8B5CF6;
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.7);
+    }
+
+    /* MESSAGES D'ERREUR OU INFO */
+    .info-msg {
+      color: #EF4444;
+      text-align: center;
+      font-size: 14px;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- ÉCRAN 1 : RÉGLAGES -->
+    <div id="screen-settings" class="screen">
+      <h1>Configuration</h1>
+      <div class="form-group">
+        <label>Ton prénom</label>
+        <input type="text" id="input-prenom" placeholder="Ex: Alex">
+      </div>
+      <div class="form-group">
+        <label>Ta langue principale</label>
+        <select id="select-langue-principale">
+          <option value="Français">Français</option>
+          <option value="Anglais">Anglais</option>
+          <option value="Espagnol">Espagnol</option>
+          <option value="Portugais">Portugais</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Langue à apprendre</label>
+        <select id="select-langue-cible">
+          <option value="Anglais" data-code="en-US">Anglais</option>
+          <option value="Espagnol" data-code="es-ES">Espagnol</option>
+          <option value="Portugais" data-code="pt-BR">Portugais brésilien</option>
+          <option value="Français" data-code="fr-CA">Français (Canada)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Niveau</label>
+        <select id="select-niveau">
+          <option value="débutant">Débutant</option>
+          <option value="intermédiaire">Intermédiaire</option>
+          <option value="avancé">Avancé</option>
+        </select>
+      </div>
+      <button onclick="saveSettings()">Enregistrer et continuer</button>
+    </div>
+
+    <!-- ÉCRAN 2 : ACCUEIL -->
+    <div id="screen-home" class="screen">
+      <h1>Prof IA</h1>
+      <p style="text-align: center; margin-bottom: 20px;" id="welcome-msg">Bonjour !</p>
+      
+      <h3>Dernière séance :</h3>
+      <div class="card" id="last-summary">Aucun résumé disponible pour le moment.</div>
+
+      <button onclick="startCall()">📞 Appeler le prof</button>
+      <button class="secondary" onclick="showScreen('screen-settings')">⚙️ Réglages</button>
+    </div>
+
+    <!-- ÉCRAN 3 : APPEL EN COURS -->
+    <div id="screen-call" class="screen">
+      <div class="timer" id="call-timer">05:00</div>
+      <div class="status-badge" id="status-badge">Connexion...</div>
+
+      <div class="mic-button" id="mic-btn">🎙️</div>
+
+      <div class="info-msg" id="call-error"></div>
+
+      <button class="danger" onclick="endCall()">🔴 Raccrocher</button>
+    </div>
+
+    <!-- ÉCRAN 4 : FIN D'APPEL (RÉSUMÉ) -->
+    <div id="screen-summary" class="screen">
+      <h1>Séance terminée !</h1>
+      <h3>Résumé de la leçon :</h3>
+      <div class="card" id="current-summary">Génération du résumé en cours...</div>
+      <button onclick="showScreen('screen-home')">Retour à l'accueil</button>
+    </div>
+
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. CONFIGURATION ET VARIABLES GLOBALES
+       ========================================================================== */
+    
+    // Remplacer par ta clé d'API Gemini (Gratuit sur Google AI Studio)
+    const GEMINI_API_KEY = "AQ.Ab8RN6JI3Faqzv0bXljZQuqQCS_FvQS4ZO5S7m6r1LEtV66FjA";
+    
+    // Modèle Gemini Flash actuel (Vérifier sur https://ai.google.dev/gemini-api/docs/models/gemini)
+    const GEMINI_MODEL = "gemini-2.5-flash"; 
+
+    // Variables d'état de l'application
+    let userSettings = {};
+    let conversationHistory = [];
+    let callTimerInterval = null;
+    let timeLeft = 300; // 5 minutes en secondes
+    let recognition = null;
+    let isCallActive = false;
+
+    /* ==========================================================================
+       2. GESTION DES ÉCRANS ET LOCALSTORAGE
+       ========================================================================== */
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    function saveSettings() {
+      const selectTarget = document.getElementById('select-langue-cible');
+      const selectedOption = selectTarget.options[selectTarget.selectedIndex];
+
+      userSettings = {
+        prenom: document.getElementById('input-prenom').value || 'Élève',
+        languePrincipale: document.getElementById('select-langue-principale').value,
+        langueCible: selectTarget.value,
+        langueCode: selectedOption.getAttribute('data-code'), // ex: 'en-US'
+        niveau: document.getElementById('select-niveau').value
+      };
+
+      localStorage.setItem('prof_ia_settings', JSON.stringify(userSettings));
+      updateHomeScreen();
+      showScreen('screen-home');
+    }
+
+    function loadSettings() {
+      const saved = localStorage.getItem('prof_ia_settings');
+      if (saved) {
+        userSettings = JSON.parse(saved);
+        document.getElementById('input-prenom').value = userSettings.prenom;
+        document.getElementById('select-langue-principale').value = userSettings.languePrincipale;
+        document.getElementById('select-langue-cible').value = userSettings.langueCible;
+        document.getElementById('select-niveau').value = userSettings.niveau;
+        updateHomeScreen();
+        showScreen('screen-home');
+      } else {
+        showScreen('screen-settings');
+      }
+    }
+
+    function updateHomeScreen() {
+      document.getElementById('welcome-msg').innerText = `Ravi de te revoir, ${userSettings.prenom} !`;
+      const lastSummary = localStorage.getItem('prof_ia_last_summary');
+      if (lastSummary) {
+        document.getElementById('last-summary').innerText = lastSummary;
+      }
+    }
+
+    /* ==========================================================================
+       3. RECONNAISSANCE VOCALE & SYNTHÈSE VOCALE
+       ========================================================================== */
+
+    // Initialisation de Web Speech API (Reconnaissance vocale)
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    function initSpeech() {
+      if (!SpeechRecognition) {
+        alert("La reconnaissance vocale n'est pas supportée par votre navigateur. Utilisez Chrome sur Android.");
+        return false;
+      }
+      
+      recognition = new SpeechRecognition();
+      recognition.continuous = false; // Arrête d'écouter dès qu'une phrase est terminée
+      recognition.interimResults = false;
+      recognition.lang = userSettings.langueCode;
+
+      recognition.onresult = (event) => {
+        const text = event.results[0][0].transcript;
+        if (text.trim() !== "") {
+          handleUserSpeech(text);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Erreur de reconnaissance:", event.error);
+        if (isCallActive) {
+          if (event.error === 'not-allowed') {
+            showCallError("Permission micro refusée !");
+          } else {
+            showCallError("Problème d'écoute. Parle à nouveau.");
+            // On retente d'écouter si l'appel est toujours en cours
+            setTimeout(startListening, 2000);
+          }
+        }
+      };
+
+      recognition.onend = () => {
+        // La reconnaissance s'est arrêtée
+      };
+
+      return true;
+    }
+
+    function startListening() {
+      if (!isCallActive) return;
+      showCallError("");
+      updateStatus("J'écoute...", "listening");
+      try {
+        recognition.lang = userSettings.langueCode;
+        recognition.start();
+      } catch (e) {
+        // La reconnaissance était probablement déjà démarrée
+      }
+    }
+
+    function stopListening() {
+      if (recognition) recognition.stop();
+    }
+
+    // Synthèse vocale (Le prof parle)
+    function speakText(text, onEndCallback) {
+      window.speechSynthesis.cancel(); // Stoppe toute lecture en cours
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = userSettings.langueCode;
+      
+      // Ajuste la vitesse si l'élève est débutant
+      if (userSettings.niveau === 'débutant') {
+        utterance.rate = 0.8;
+      }
+
+      utterance.onend = () => {
+        if (onEndCallback) onEndCallback();
+      };
+
+      utterance.onerror = (e) => {
+        console.error("Erreur de synthèse vocale:", e);
+        if (onEndCallback) onEndCallback();
+      };
+
+      updateStatus("Je parle...", "speaking");
+      window.speechSynthesis.speak(utterance);
+    }
+
+    /* ==========================================================================
+       4. APPEL À L'API GEMINI (FETCH)
+       ========================================================================== */
+
+    async function callGemini(contents, systemInstruction) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+      
+      const body = {
+        contents: contents
+      };
+
+      if (systemInstruction) {
+        body.systemInstruction = {
+          parts: [{ text: systemInstruction }]
+        };
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+      } catch (err) {
+        console.error("Erreur Gemini:", err);
+        showCallError("Problème réseau avec le prof IA.");
+        return null;
+      }
+    }
+
+    /* ==========================================================================
+       5. LOGIQUE DE L'APPEL
+       ========================================================================== */
+
+    async function startCall() {
+      if (!initSpeech()) return;
+
+      isCallActive = true;
+      conversationHistory = [];
+      timeLeft = 300; // 5 min
+      showScreen('screen-call');
+      startTimer();
+
+      const lastSummary = localStorage.getItem('prof_ia_last_summary') || "Aucune séance précédente.";
+
+      // Prompt Système personnalisé
+      const systemPrompt = `Tu es un professeur de langues amical qui parle au téléphone.
+Langue principale de l'élève : ${userSettings.languePrincipale}. 
+Langue apprise : ${userSettings.langueCible}. 
+Niveau : ${userSettings.niveau}. 
+Prénom : ${userSettings.prenom}.
+Dernière séance : ${lastSummary}.
+Règles : réponds en 1 à 3 phrases courtes. Parle lentement si l'élève est débutant. Corrige seulement les erreurs importantes, en une phrase, puis continue la conversation. Si l'élève pose une question de grammaire, réponds-y d'abord. S'il demande de changer de langue d'explication, adapte-toi tout de suite. N'invente jamais de souvenirs. Quand je te demande le résumé final, donne 3 à 5 lignes.`;
+
+      // Premier message d'accueil de l'IA
+      updateStatus("Connexion...", "thinking");
+      
+      const initialContents = [
+        { role: "user", parts: [{ text: "Bonjour, nous commençons l'appel." }] }
+      ];
+
+      const response = await callGemini(initialContents, systemPrompt);
+
+      if (response && isCallActive) {
+        // Enregistrement de l'échange dans l'historique local
+        conversationHistory.push({ role: "model", parts: [{ text: response }] });
+        
+        speakText(response, () => {
+          // Une fois la phrase dite, on écoute l'élève
+          startListening();
+        });
+      }
+    }
+
+    async function handleUserSpeech(text) {
+      stopListening();
+      updateStatus("Je réfléchis...", "thinking");
+
+      // Ajout de la phrase de l'élève à l'historique
+      conversationHistory.push({ role: "user", parts: [{ text: text }] });
+
+      const lastSummary = localStorage.getItem('prof_ia_last_summary') || "Aucune.";
+      const systemPrompt = `Tu es un professeur de langues amical. Langue principale : ${userSettings.languePrincipale}. Langue apprise : ${userSettings.langueCible}. Niveau : ${userSettings.niveau}. Prénom : ${userSettings.prenom}. Dernière séance : ${lastSummary}. Réponds en 1 à 3 phrases courtes max.`;
+
+      const response = await callGemini(conversationHistory, systemPrompt);
+
+      if (response && isCallActive) {
+        conversationHistory.push({ role: "model", parts: [{ text: response }] });
+        speakText(response, () => {
+          startListening();
+        });
+      }
+    }
+
+    async function endCall() {
+      isCallActive = false;
+      stopListening();
+      window.speechSynthesis.cancel();
+      clearInterval(callTimerInterval);
+
+      showScreen('screen-summary');
+      document.getElementById('current-summary').innerText = "Génération du résumé par le prof...";
+
+      // Demande de résumé à Gemini
+      const summaryPrompt = [
+        ...conversationHistory,
+        { role: "user", parts: [{ text: "Génère un résumé de la séance en 3 à 5 lignes max : mots appris, erreurs principales, et une idée pour la prochaine fois." }] }
+      ];
+
+      const summaryText = await callGemini(summaryPrompt, null);
+
+      if (summaryText) {
+        document.getElementById('current-summary').innerText = summaryText;
+        localStorage.setItem('prof_ia_last_summary', summaryText);
+      } else {
+        document.getElementById('current-summary').innerText = "Impossible de générer le résumé (erreur de connexion).";
+      }
+
+      updateHomeScreen();
+    }
+
+    /* ==========================================================================
+       6. FONCTIONS UTILITAIRES DE L'INTERFACE
+       ========================================================================== */
+
+    function updateStatus(text, stateClass) {
+      const badge = document.getElementById('status-badge');
+      const mic = document.getElementById('mic-btn');
+      
+      badge.innerText = text;
+      mic.className = "mic-button " + stateClass;
+    }
+
+    function showCallError(msg) {
+      document.getElementById('call-error').innerText = msg;
+    }
+
+    function startTimer() {
+      clearInterval(callTimerInterval);
+      callTimerInterval = setInterval(() => {
+        timeLeft--;
+        const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+        const secs = String(timeLeft % 60).padStart(2, '0');
+        document.getElementById('call-timer').innerText = `${mins}:${secs}`;
+
+        if (timeLeft <= 0) {
+          endCall();
+        }
+      }, 1000);
+    }
+
+    // Chargement automatique au démarrage
+    window.onload = () => {
+      loadSettings();
+      
+      // Enregistrement du Service Worker PWA
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+          .catch(err => console.log('Erreur SW:', err));
+      }
+    };
+  </script>
+</body>
+</html>
